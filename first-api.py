@@ -1,6 +1,13 @@
 from fastapi import FastAPI, Response
+from pydantic import BaseModel
 
 app = FastAPI()
+
+
+class Product(BaseModel):
+    name: str
+    price: float
+
 
 products = [
     {"id": 1, "name": "iPad", "price": 599},
@@ -31,3 +38,35 @@ def index(id: int, response: Response):
 
     response.status_code = 404
     return "Product not found"
+
+
+@app.post("/products")
+def create_product(new_product: Product, response: Response):
+    product = new_product.dict()
+    product['id'] = len(products) + 1
+    products.append(product)
+    response.status_code = 201
+    return product
+
+
+@app.put("/products/{id}")
+def edit_product(id: int, edited_product: Product, response: Response):
+    for product in products:
+        if product["id"] == id:
+            product["name"] = edited_product.name
+            product["price"] = edited_product.price
+            response.status_code = 200
+            return product
+    response.status_code = 404
+    return "Product Not found"
+
+
+@app.delete("/products/{id}")
+def delete_product(id: int, response: Response):
+    for product in products:
+        if product["id"] == id:
+            products.remove(product)
+            response.status_code = 204
+            return "Product deleted"
+    response.status_code = 404
+    return "Product Not found"
